@@ -1,8 +1,10 @@
 # Blender Metaverse Toolkit Blender Add-on (MVT) AddOn
   
-  Plugin ("Project Hermes") is a plugin for Blender to allow for easier content creation originally created for importing for the High Fidelity Metaverse Platform. 
+  Plugin ("Project Hermes") is a plugin for Blender to allow for easier content creation originally
+  created for importing for the High Fidelity Metaverse Platform. 
   
-  It has now being expanded to support additional platforms. as the official High Fidelity platform is turning off, while its forks are going to live their separate lives.
+  It has now being expanded to support additional platforms. as the official High Fidelity platform is
+  turning off, while its forks are going to live their separate lives.
   This plugin now will focus on supporting as many platforms as possible.
   
   Currently Supports
@@ -20,11 +22,13 @@
 
   Open the Github page, go to releases and download the `metaverse_tools.zip` zip file. 
   
-  In Blender. Goto `User Preferences`, and `Add-ons`. From there `Install Add-on from File` and select the Zip file that we downloaded.
+  In Blender. Goto `User Preferences`, and `Add-ons`. From there `Install Add-on from File` and select
+  the Zip file that we downloaded.
   
   Enable the plugin under `Import-Export: Metaverse Toolkit Blender Add-on`.
   
-  **Note**: If you had previous used plugin when it was "High Fidelity" Only, make sure to uninstall the old one first.
+  **Note**: If you had previous used plugin when it was "High Fidelity" Only, make sure to uninstall
+  the old one first.
   
 ## From Sources
   
@@ -38,6 +42,20 @@
   
      On Windows , which is under `%APPDATA%/Roaming/Blender Foundation/Blender/<BlenderVersion>/scripts/addons`
   3. Go the Blender's preference → addons, enable it.
+
+# Development
+
+  To check runtime log, for example, seeing that print Hello World, go to `Windows` → `Toggle System Console`
+
+# Release
+
+  Just:
+
+  ```bash
+  python3 package.py
+  ```
+
+  The built .zip is above the path of repo.
   
   
 # Utility Functions:
@@ -149,7 +167,8 @@
 # Changelog:
   
 ### 3.1.0
-  - Added `Facerig/Animaze Bundle export` - Creates a folder structure that is compatible with animaze/facerig
+  - Added `Facerig/Animaze Bundle export` - Creates a folder structure that is compatible with
+    animaze/facerig
   - Hifi->Vircadia rename
   - `Split Mirrorable Actions` Mirror Actions into Actions allowing creation of mirrored actions
   - Using latest Apply Modifiers version for better Blender 2.90+ compatability

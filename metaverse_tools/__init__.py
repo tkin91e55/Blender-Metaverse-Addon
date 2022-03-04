@@ -26,7 +26,7 @@ bl_info = {
     "description": "Blender tools to allow for easier Content creation various platforms",
     "warning": "",
     "wiki_url": "",
-    "support": "COMMUNITY",
+    "support": "TESTING",
     "category": "Import-Export",
 }
 
