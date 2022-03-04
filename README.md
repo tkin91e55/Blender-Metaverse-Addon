@@ -45,7 +45,13 @@
 
 # Development
 
-  To check runtime log, for example, seeing that print Hello World, go to `Windows` → `Toggle System Console`
+  To check runtime log, for example, seeing that print Hello World, go to `Windows` → `Toggle System
+  Console`
+
+  To develop easier in Windows Blender env, may use softlink to link the Github repo under Blender's
+  addon's path, not Shortcut, they are different. Check 
+  [this](https://www.tenforums.com/tutorials/131182-create-soft-hard-symbolic-links-windows.html#option2)
+
 
 # Release
 
