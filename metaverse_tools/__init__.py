@@ -35,6 +35,14 @@ import sys
 import logging
 import bpy
 
+
+import importlib
+if "EXPORT_OT_MVT_TOOLSET_FBX" in locals():
+    importlib.reload(ext.modified_fbx_tools)
+if "utils" in locals():
+    importlib.reload(utils)
+
+
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, IntProperty, BoolProperty
 
@@ -47,12 +55,7 @@ from . import armature
 from . import files
 from . import utils
 
-
 from .files.facerig import EXPORT_OT_MVT_TOOLSET_Writer_Facerig_Bundle_DAE
-
-if "EXPORT_OT_MVT_TOOLSET_FBX" in locals():
-    import importlib
-    importlib.reload(ext.modified_fbx_tools)
 
 from .ext.modified_fbx_tools import EXPORT_OT_MVT_TOOLSET_FBX
 

@@ -36,7 +36,9 @@ from bpy_extras import node_shader_utils
 
 from mathutils import Vector, Matrix
 
-
+# io_scene_fbx is Official's Blender-Addon
+# https://github.com/blender/blender-addons/tree/master/io_scene_fbx
+# can be register/unregistered at Blender's Add-ons
 import io_scene_fbx
 from io_scene_fbx import encode_bin, data_types, fbx_utils
 from io_scene_fbx.fbx_utils import (
@@ -134,6 +136,7 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     Write the Material data block.
     """
 
+    print("\n Writing the Material data block")
     ambient_color = (0.0, 0.0, 0.0)
     if scene_data.data_world:
         ambient_color = next(iter(scene_data.data_world.keys())).color
@@ -143,6 +146,7 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     ma_key, _objs = scene_data.data_materials[ma]
     ma_type = b"Phong"
 
+    #  this line is responsible for a exported material
     fbx_ma = elem_data_single_int64(root, b"Material", get_fbx_uuid_from_key(ma_key))
     fbx_ma.add_string(fbx_name_class(ma.name.encode(), b"Material"))
     fbx_ma.add_string(b"")
@@ -154,10 +158,15 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     tmpl = elem_props_template_init(scene_data.templates, b"Material")
     props = elem_properties(fbx_ma)
     
-    # Absolutely not Standard, but Autodesk doesnt give a fuck apparently about what FBX Standard really is anymore.
+    # Absolutely not Standard, but Autodesk doesnt give a fuck apparently about what FBX Standard really
+    # is anymore.
     # Lets Cheat and shim some FBX Stingray features in until Hifi supports proper GLTF stuff.
     # This Avoids also any issues with the hifi reading some stuff proper
-    # Basically Forcing thee FBX Serializer to actually just think this is an PBS material, not a "Blender one."  
+    # Basically Forcing thee FBX Serializer to actually just think this is an PBS(Physically Based
+    # Shading) material,
+    # not a "Blender one."  
+
+    print("   start setting template properties")
 
     elem_props_template_set(tmpl, props, "p_string", b"ShadingModel", ma_type.decode())
 
@@ -166,6 +175,7 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     
     # --------
     # https://github.com/highfidelity/hifi/blob/d88bee89e4204c5dd167e0e10ff8ba3d91a26696/libraries/fbx/src/FBXSerializer.cpp
+    # https://github.com/vircadia/vircadia/blob/master/libraries/model-serializers/src/FBXSerializer.cpp
     # -------- 
     ## Additionally there is tex_ao_map and ambientcolor / ambientfactor that neesd to investigate, someday. TODO: -matti
     elem_props_template_set(tmpl, props, "p_color", b"AmbientColor", ambient_color)
@@ -188,12 +198,12 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     print(ma_wrap)
 
     if ma_wrap.base_color_texture is not None and ma_wrap.base_color_texture.node_image is not None:
-        print("Color Texture")
+        print(" Material part: there is  Color Texture")
         elem_props_template_set(tmpl, props, "p_color", b"DiffuseColor", (1.0, 1.0, 1.0))
         elem_props_template_set(tmpl, props, "p_color", b"Maya|base_color", (1.0, 1.0, 1.0))
         elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_color_map", True)
     else: 
-        print("No Color Texture")
+        print(" Material part: there is NO Color Texture")
         elem_props_template_set(tmpl, props, "p_color", b"DiffuseColor", ma_wrap.base_color)
         elem_props_template_set(tmpl, props, "p_color", b"Maya|base_color", ma_wrap.base_color)
 
@@ -225,6 +235,7 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
         elem_props_template_set(tmpl, props, "p_color", b"EmissiveColor", ma_wrap.emission)
         elem_props_template_set(tmpl, props, "p_color", b"Maya|emissive", ma_wrap.emission)
 
+    print("   ended setting template properties")
 
     elem_props_template_finalize(tmpl, props)
 
@@ -243,12 +254,15 @@ def fbx_metav_toolset_data_texture_file_elements(root, blender_tex_key, scene_da
     #     For now assuming most logical and simple stuff.
 
     ma, sock_name = blender_tex_key
-    
+    print("\n Texture Part ")
+    print("Another HifiShderWrapper in fbx_metav_toolset_data_texture_file_elements")
     ma_wrap = HifiShaderWrapper(ma, is_readonly=True)
     tex_key, _fbx_prop = scene_data.data_textures[blender_tex_key]
     tex = getattr(ma_wrap, sock_name)
     img = tex.image
     fname_abs, fname_rel = _gen_vid_path(img, scene_data)
+
+    print(" starting setting texture properties")
 
     fbx_tex = elem_data_single_int64(root, b"Texture", get_fbx_uuid_from_key(tex_key))
     fbx_tex.add_string(fbx_name_class(sock_name.encode(), b"Texture"))
@@ -305,6 +319,7 @@ def fbx_metav_toolset_data_texture_file_elements(root, blender_tex_key, scene_da
     # UseMaterial should always be ON imho.
     elem_props_template_set(tmpl, props, "p_bool", b"UseMaterial", True)
     elem_props_template_set(tmpl, props, "p_bool", b"UseMipMap", False)
+    print(" ended setting texture properties")
     elem_props_template_finalize(tmpl, props)
 
     # No custom properties, since that's not a data-block anymore.
@@ -331,6 +346,7 @@ def fbx_data_from_scene(scene, depsgraph, settings):
     """
     Do some pre-processing over scene's data...
     """
+    print('\n collect data from scene fbx_data_from_scene...')
     objtypes = settings.object_types
     dp_objtypes = objtypes - {'ARMATURE'}  # Armatures are not supported as dupli instances currently...
     perfmon = PerfMon()
@@ -366,6 +382,7 @@ def fbx_data_from_scene(scene, depsgraph, settings):
                     for ob_obj in objects if ob_obj.type == 'EMPTY'}
 
     perfmon.step("FBX export prepare: Wrapping Meshes...")
+    print(" FBX export prepare: Wrapping Meshes...")
 
     data_meshes = {}
     for ob_obj in objects:
@@ -501,6 +518,7 @@ def fbx_data_from_scene(scene, depsgraph, settings):
         data_world = {}
 
     perfmon.step("FBX export prepare: Wrapping Materials...")
+    print(" FBX export prepare: Wrapping Materials...")
 
     # TODO: Check all the material stuff works even when they are linked to Objects
     #       (we can then have the same mesh used with different materials...).
@@ -516,10 +534,12 @@ def fbx_data_from_scene(scene, depsgraph, settings):
             # Note theoretically, FBX supports any kind of materials, even GLSL shaders etc.
             # However, I doubt anything else than Lambert/Phong is really portable!
             # Note we want to keep a 'dummy' empty material even when we can't really support it, see T41396.
+            # https://developer.blender.org/rBA07747bcf64963eefaff8aaa9cee24ed652fda5b9
             ma_data = data_materials.setdefault(ma, (get_blenderID_key(ma), []))
             ma_data[1].append(ob_obj)
 
     perfmon.step("FBX export prepare: Wrapping Textures...")
+    print(" FBX export prepare: Wrapping Textures...")
 
     # Note FBX textures also hold their mapping info.
     # TODO: Support layers?
@@ -528,13 +548,14 @@ def fbx_data_from_scene(scene, depsgraph, settings):
     data_videos = {}
     # For now, do not use world textures, don't think they can be linked to anything FBX wise...
     for ma in data_materials.keys():
-        # Note: with nodal shaders, we'll could be generating much more textures, but that's kind of unavoidable,
-        #       given that textures actually do not exist anymore in material context in Blender...
+        # Note: with nodal shaders, we'll could be generating much more textures, but that's kind of
+        # unavoidable, given that textures actually do not exist anymore in material context in Blender...
+        print(" instantiated a HifiShaderWrapper when fbx_data_from_scene")
         ma_wrap = HifiShaderWrapper(ma, is_readonly=True)
-        print("Material", ma, ma.name)
+        print(" Material", ma, ma.name)
         for sock_name, fbx_name in HIFI_SPECIFIC_SOCKETS_FBX:
             tex = getattr(ma_wrap, sock_name)
-            print("Texture:", tex, sock_name)
+            print(" Texture:", tex, sock_name)
             if tex is None or tex.image is None:
                 continue
 
@@ -835,11 +856,12 @@ def fbx_objects_elements(root, scene_data):
         fbx_data_leaf_bone_elements(objects, scene_data)
 
     for ma in scene_data.data_materials:
+        print(" fbx_data_material_elements")
         fbx_data_material_elements(objects, ma, scene_data)
 
-    print("[tkk] Getting Tex Keys")
+    print("\n Getting Tex Keys in fbx_objects_elements()")
     for blender_tex_key in scene_data.data_textures:
-        print(blender_tex_key)
+        print(' a key: %r ' % str(blender_tex_key))
         fbx_data_texture_file_elements(objects, blender_tex_key, scene_data)
 
     for vid in scene_data.data_videos:
@@ -962,7 +984,7 @@ def save_single(operator, scene, depsgraph, filepath="",
 
     import bpy_extras.io_utils
 
-    print('\n[tkk] FBX export starting... %r' % filepath)
+    print('\n FBX export starting... %r' % filepath)
     start_time = time.process_time()
 
     # Generate some data about exported scene...
@@ -981,6 +1003,7 @@ def save_single(operator, scene, depsgraph, filepath="",
     fbx_definitions_elements(root, scene_data)
 
     # Actual data.
+    print('\n Actual Data process... ')
     fbx_objects_elements(root, scene_data)
 
     # How data are inter-connected.
@@ -1002,7 +1025,7 @@ def save_single(operator, scene, depsgraph, filepath="",
     if not media_settings.embed_textures:
         bpy_extras.io_utils.path_reference_copy(media_settings.copy_set)
 
-    print('export finished in %.4f sec.' % (time.process_time() - start_time))
+    print('\n export finished in %.4f sec.' % (time.process_time() - start_time))
     return {'FINISHED'}
 
 def save(operator, context,

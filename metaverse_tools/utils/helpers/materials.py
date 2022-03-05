@@ -226,7 +226,7 @@ class HifiShaderWrapper(PrincipledBSDFWrapper):
 
     def update(self):
         PrincipledBSDFWrapper.update(self)
-        print("[tkk] HifiShaderWrapper", self.use_nodes, self.node_principled_bsdf)
+        print("HifiShaderWrapper", self.use_nodes, self.node_principled_bsdf)
 
 
     def emission_get(self):

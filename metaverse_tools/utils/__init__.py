@@ -18,6 +18,11 @@
 # ##### END GPL LICENSE BLOCK #####
 # Copyright 2019 Matti 'Menithal' Lahtinen
 
+import importlib
+
+if "helpers" in locals():
+    importlib.reload(helpers)
+
 from . import (
     bpyutil,
     bones,
