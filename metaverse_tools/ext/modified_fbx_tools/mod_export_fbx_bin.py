@@ -837,7 +837,7 @@ def fbx_objects_elements(root, scene_data):
     for ma in scene_data.data_materials:
         fbx_data_material_elements(objects, ma, scene_data)
 
-    print("Getting Tex Keys")
+    print("[tkk] Getting Tex Keys")
     for blender_tex_key in scene_data.data_textures:
         print(blender_tex_key)
         fbx_data_texture_file_elements(objects, blender_tex_key, scene_data)
@@ -962,7 +962,7 @@ def save_single(operator, scene, depsgraph, filepath="",
 
     import bpy_extras.io_utils
 
-    print('\nFBX export starting... %r' % filepath)
+    print('\n[tkk] FBX export starting... %r' % filepath)
     start_time = time.process_time()
 
     # Generate some data about exported scene...

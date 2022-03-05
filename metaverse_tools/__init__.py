@@ -49,6 +49,11 @@ from . import utils
 
 
 from .files.facerig import EXPORT_OT_MVT_TOOLSET_Writer_Facerig_Bundle_DAE
+
+if "EXPORT_OT_MVT_TOOLSET_FBX" in locals():
+    import importlib
+    importlib.reload(ext.modified_fbx_tools)
+
 from .ext.modified_fbx_tools import EXPORT_OT_MVT_TOOLSET_FBX
 
 from .utils.bpyutil import operator_exists

@@ -31,6 +31,10 @@ from bpy_extras.io_utils import (
 
 from bpy.props import *
 
+if "mod_export_fbx_bin" in locals():
+    import importlib
+    importlib.reload(mod_export_fbx_bin)
+
 from . import mod_export_fbx_bin
 from bpy.types import AddonPreferences
 from bpy.app.handlers import persistent

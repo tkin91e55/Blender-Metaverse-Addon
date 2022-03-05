@@ -52,6 +52,17 @@
   addon's path, not Shortcut, they are different. Check 
   [this](https://www.tenforums.com/tutorials/131182-create-soft-hard-symbolic-links-windows.html#option2)
 
+  ```cmd
+  %under priviledged cmd
+  mklink /d "C:\...\dest" "C:\....\src"
+  ```
+
+  It turns out to be much more complicated, the Blender needs to `Reload Scripts` and the addon scripts
+  needed to be implemented with **importlib.reload** logic. 
+  Refer to [this thread](https://blenderartists.org/t/how-to-reload-add-on-code/1202715/3) and 
+  [this thread](https://github.com/EmbarkStudios/blender-tools/issues/1)
+
+  The easier and safer way is just restarting the Blender
 
 # Release
 
@@ -69,12 +80,17 @@
 ### General Tools
   
   - Material Tools
-     - Automatic `Principled BDSF` binding to HF FBX. You can use Blender materials to define HF materials, just do not use Node Groups.
-     - `Set Non-Diffuse ColorData` and `Auto Correct on Save` Tools that fixes color spaces for Roughness, Normal, and Metallic textures for preview
+     - Automatic `Principled BDSF` binding to HF FBX. You can use Blender materials to define HF
+       materials, just do not use Node Groups.
+     - `Set Non-Diffuse ColorData` and `Auto Correct on Save` Tools that fixes color spaces for
+       Roughness, Normal, and Metallic textures for preview
      - `Textures to Mask` and `Textures to Png` utility helpers.
   - Mesh Tools:
-      - `Merge Modifiers & Shapekeys` attempt to merge modifiers onto Mesh with Shapekeys using Przemysław Bągard's ApplyModifierForObjectWithShapeKeys script, now included with this plugin, but if an existing copy exists, it is used instead
-      - `Clean Unused Vertex Groups` Clean model from vertex groups that are not in its current skeleton.
+      - `Merge Modifiers & Shapekeys` attempt to merge modifiers onto Mesh with Shapekeys using
+        Przemysław Bągard's ApplyModifierForObjectWithShapeKeys script, now included with this plugin,
+        but if an existing copy exists, it is used instead
+      - `Clean Unused Vertex Groups` Clean model from vertex groups that are not in its current
+        skeleton.
   - Armature Tools:
       - `Test Avatar Rest Pose` - Attempts to detect type of skeleton and applies an absolute T-Pose by the platform reference
       - `Merge Bones` - Attempts to merge selected bones to last selected bone.
