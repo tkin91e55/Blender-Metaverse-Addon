@@ -125,6 +125,9 @@ from metaverse_tools.utils.helpers.materials import HifiShaderWrapper
 HIFI_SPECIFIC_SOCKETS_FBX = (
     # Hifi takes alpha from the diffuse!, so no need to attach
     ("base_color_texture", b"tex_color_map"),
+    # With DiffuseColorSo that 3D Viewer can preview the texture,
+    # for more see 'PRINCIPLED_TEXTURE_SOCKETS_TO_FBX'
+    ("base_color_texture", b"DiffuseColor"),
     ("metallic_texture", b"tex_metallic_map"),
     ("normalmap_texture", b"tex_normal_map"),
     ("roughness_texture", b"tex_roughness_map"),
