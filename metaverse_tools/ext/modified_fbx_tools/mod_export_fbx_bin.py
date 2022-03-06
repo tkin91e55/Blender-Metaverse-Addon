@@ -139,85 +139,138 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     Write the Material data block.
     """
 
-    print("\n Writing the Material data block")
     ambient_color = (0.0, 0.0, 0.0)
     if scene_data.data_world:
         ambient_color = next(iter(scene_data.data_world.keys())).color
 
     ma_wrap = HifiShaderWrapper(ma, is_readonly=True)
-   # ma_wrap = HifiShaderWrapper(ma, is_readonly=True)
     ma_key, _objs = scene_data.data_materials[ma]
     ma_type = b"Phong"
 
-    #  this line is responsible for a exported material
+    # this line is responsible for a exported material
     fbx_ma = elem_data_single_int64(root, b"Material", get_fbx_uuid_from_key(ma_key))
     fbx_ma.add_string(fbx_name_class(ma.name.encode(), b"Material"))
     fbx_ma.add_string(b"")
 
     elem_data_single_int32(fbx_ma, b"Version", FBX_MATERIAL_VERSION)
+    # those are not yet properties, it seems...
     elem_data_single_string(fbx_ma, b"ShadingModel", ma_type)
-    elem_data_single_int32(fbx_ma, b"MultiLayer", 0)
+    elem_data_single_int32(fbx_ma, b"MultiLayer", 0)  # Should be bool...
 
     tmpl = elem_props_template_init(scene_data.templates, b"Material")
     props = elem_properties(fbx_ma)
-    
-    # Absolutely not Standard, but Autodesk doesnt give a fuck apparently about what FBX Standard really
-    # is anymore.
+
+    # Absolutely not Standard, but Autodesk doesnt give a fuck apparently about what FBX Standard really is anymore.
     # Lets Cheat and shim some FBX Stingray features in until Hifi supports proper GLTF stuff.
     # This Avoids also any issues with the hifi reading some stuff proper
-    # Basically Forcing thee FBX Serializer to actually just think this is an PBS(Physically Based
-    # Shading) material,
-    # not a "Blender one."  
-
-    print("   start setting template properties")
+    # Basically Forcing thee FBX Serializer to actually just think this is an PBS(Physically Based Shading)
+    # material, not a "Blender one."  
 
     elem_props_template_set(tmpl, props, "p_string", b"ShadingModel", ma_type.decode())
-
     # Not in Principled BSDF, so assuming always 1
     elem_props_template_set(tmpl, props, "p_number", b"DiffuseFactor", 1.0)
-    
+
+    # Not in Principled BSDF, so assuming always 0
     # --------
-    # https://github.com/highfidelity/hifi/blob/d88bee89e4204c5dd167e0e10ff8ba3d91a26696/libraries/fbx/src/FBXSerializer.cpp
     # https://github.com/vircadia/vircadia/blob/master/libraries/model-serializers/src/FBXSerializer.cpp
     # -------- 
     ## Additionally there is tex_ao_map and ambientcolor / ambientfactor that neesd to investigate, someday. TODO: -matti
     elem_props_template_set(tmpl, props, "p_color", b"AmbientColor", ambient_color)
     elem_props_template_set(tmpl, props, "p_number", b"AmbientFactor", 0.0)
 
+    ##################################Transparency things################################################
+    ## Sweetness... Looks like we are not the only ones to not know exactly how
+    ## FBX is supposed to work (see T59850).
+    ## According to one of its developers, Unity uses that formula to extract alpha value:
+    ##
+    ##   alpha = 1 - TransparencyFactor
+    ##   if (alpha == 1 or alpha == 0):
+    ##       alpha = 1 - TransparentColor.r
+    ##
+    ## Until further info, let's assume this is correct way to do, hence the
+    ## following code for TransparentColor.
+    #if ma_wrap.alpha < 1.0e-5 or ma_wrap.alpha > (1.0 - 1.0e-5):
+    #    elem_props_template_set(tmpl, props, "p_color", b"TransparentColor", (1.0 - ma_wrap.alpha,) * 3)
+    #else:
+    #    elem_props_template_set(tmpl, props, "p_color", b"TransparentColor", ma_wrap.base_color)
+    #elem_props_template_set(tmpl, props, "p_number", b"TransparencyFactor", 1.0 - ma_wrap.alpha)
+    #elem_props_template_set(tmpl, props, "p_number", b"Opacity", ma_wrap.alpha)
+
     #elem_props_template_set(tmpl, props, "p_color", b"TransparentColor", ma_wrap.base_color)
     #elem_props_template_set(tmpl, props, "p_number", b"TransparencyFactor", ma_wrap.transparency)
     #elem_props_template_set(tmpl, props, "p_number", b"Opacity", 1.0 - ma_wrap.transparency)
 
+
+    ##################################Normals things######################################################
     elem_props_template_set(tmpl, props, "p_vector_3d", b"NormalMap", (0.0, 0.0, 0.0))
-    
+
+    #elem_props_template_set(tmpl, props, "p_double", b"BumpFactor", ma_wrap.normalmap_strength)
+    # Not sure about those...
+    """
+    b"Bump": ((0.0, 0.0, 0.0), "p_vector_3d"),
+    b"DisplacementColor": ((0.0, 0.0, 0.0), "p_color_rgb"),
+    b"DisplacementFactor": (0.0, "p_double"),
+    """
+
     if ma_wrap.normalmap_texture is not None:
         elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_normal_map", True)
-   
+
+    ##################################Specular things#####################################################
+    ## TODO: use specular tint?
+    #elem_props_template_set(tmpl, props, "p_color", b"SpecularColor", ma_wrap.base_color)
+    #elem_props_template_set(tmpl, props, "p_number", b"SpecularFactor", ma_wrap.specular / 2.0)
+
     # TODO: Perhaps Additional someday ? -matti
     elem_props_template_set(tmpl, props, "p_color", b"SpecularColor",(1.0, 1.0, 1.0))
     elem_props_template_set(tmpl, props, "p_number", b"SpecularFactor", 0.0)
-    # elem_props_template_set(tmpl, props, "p_number", b"SpecularFactor", ma_wrap.specular / 2.0)
 
-    print(ma_wrap)
+
+    ##################################Shininess things###################################################
+    ## See Material template about those two!
+    ## XXX Totally empirical conversion, trying to adapt it
+    ##     (from 0.0 - 100.0 FBX shininess range to 1.0 - 0.0 Principled BSDF range)...
+
+    shininess = (1.0 - ma_wrap.roughness) * 10
+    shininess *= shininess
+    elem_props_template_set(tmpl, props, "p_number", b"Shininess", shininess)
+    elem_props_template_set(tmpl, props, "p_number", b"ShininessExponent", shininess)
+
+    #elem_props_template_set(tmpl, props, "p_color", b"ReflectionColor", ma_wrap.base_color)
+    #elem_props_template_set(tmpl, props, "p_number", b"ReflectionFactor", ma_wrap.metallic)
+
+    ##################################Diffuse things###################################################
+    #elem_props_template_set(tmpl, props, "p_color", b"DiffuseColor", ma_wrap.base_color)
 
     if ma_wrap.base_color_texture is not None and ma_wrap.base_color_texture.node_image is not None:
-        print(" Material part: there is  Color Texture")
+        print("Color Texture")
         elem_props_template_set(tmpl, props, "p_color", b"DiffuseColor", (1.0, 1.0, 1.0))
         elem_props_template_set(tmpl, props, "p_color", b"Maya|base_color", (1.0, 1.0, 1.0))
         elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_color_map", True)
     else: 
-        print(" Material part: there is NO Color Texture")
+        print("No Color Texture")
         elem_props_template_set(tmpl, props, "p_color", b"DiffuseColor", ma_wrap.base_color)
         elem_props_template_set(tmpl, props, "p_color", b"Maya|base_color", ma_wrap.base_color)
 
+
+    ##################################Emission things###################################################
+    ## Principled BSDF only has an emissive color, so we assume factor to be always 1.0.
+    #elem_props_template_set(tmpl, props, "p_color", b"EmissiveColor", ma_wrap.emission_color)
+
+    if ma_wrap.emission_texture is not None:
+        elem_props_template_set(tmpl, props, "p_color", b"EmissiveColor", (1.0, 1.0, 1.0))
+        elem_props_template_set(tmpl, props, "p_color", b"Maya|emissive", (1.0, 1.0, 1.0))
+        elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_emissive_map", True)
+    else:
+        elem_props_template_set(tmpl, props, "p_color", b"EmissiveColor", ma_wrap.emission)
+        elem_props_template_set(tmpl, props, "p_color", b"Maya|emissive", ma_wrap.emission)
+
+    #elem_props_template_set(tmpl, props, "p_number", b"EmissiveFactor", ma_wrap.emission_strength)
+    elem_props_template_set(tmpl, props, "p_number", b"EmissiveFactor", 1.0)
+    elem_props_template_set(tmpl, props, "p_number", b"Maya|emissive_intensity", 1.0) #TODO: - matti Not apparently used by Hifi atm
+    
+    ##################################Exclusive things###################################################
     elem_props_template_set(tmpl, props, "p_number", b"Roughness", ma_wrap.roughness)
     elem_props_template_set(tmpl, props, "p_number", b"Maya|roughness", ma_wrap.roughness)
-    shininess = (1.0 - ma_wrap.roughness) * 10
-    shininess *= shininess
-
-    elem_props_template_set(tmpl, props, "p_number", b"Shininess", shininess)
-    elem_props_template_set(tmpl, props, "p_number", b"ShininessExponent", shininess)
-
     if ma_wrap.roughness_texture is not None:
         elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_roughness_map", True)
 
@@ -227,21 +280,7 @@ def fbx_metav_toolset_data_material_elements(root, ma, scene_data):
     if ma_wrap.metallic_texture is not None:
         elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_metallic_map", True)
 
-    elem_props_template_set(tmpl, props, "p_number", b"EmissiveFactor", 1.0)
-    elem_props_template_set(tmpl, props, "p_number", b"Maya|emissive_intensity", 1.0) #TODO: - matti Not apparently used by Hifi atm
-    
-    if ma_wrap.emission_texture is not None:
-        elem_props_template_set(tmpl, props, "p_color", b"EmissiveColor", (1.0, 1.0, 1.0))
-        elem_props_template_set(tmpl, props, "p_color", b"Maya|emissive", (1.0, 1.0, 1.0))
-        elem_props_template_set(tmpl, props, "p_bool", b"Maya|use_emissive_map", True)
-    else:
-        elem_props_template_set(tmpl, props, "p_color", b"EmissiveColor", ma_wrap.emission)
-        elem_props_template_set(tmpl, props, "p_color", b"Maya|emissive", ma_wrap.emission)
-
-    print("   ended setting template properties")
-
     elem_props_template_finalize(tmpl, props)
-
 
     # Custom properties.
     if scene_data.settings.use_custom_props:
@@ -1125,8 +1164,10 @@ def save(operator, context,
                         src_scenes[src_sce] = src_scenes.setdefault(src_sce, 0) + 1
                     scene.collection.objects.link(obj)
 
-                # Find the 'most used' source scene, and use its unit settings. This is somewhat weak, but should work
+                # Find the 'most used' source scene, and use its unit settings. This is somewhat weak,
+                # but should work
                 # fine in most cases, and avoids stupid issues like T41931.
+                # https://developer.blender.org/rBA07747bcf64963eefaff8aaa9cee24ed652fda5b9
                 best_src_scene = None
                 best_src_scene_users = -1
                 for sce, nbr_users in src_scenes.items():
