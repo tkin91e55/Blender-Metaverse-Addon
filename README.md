@@ -64,6 +64,13 @@
 
   The easier and safer way is just restarting the Blender
 
+## Blender Addons
+
+  There is live Blender Official Addon on Github, or just refer to 
+  C:\Program Files\Blender Foundation\Blender\`version`\scripts\addons\
+
+  The fbx export is a Official Addon project.
+
 # Release
 
   Just:
